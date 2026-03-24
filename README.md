@@ -1,23 +1,32 @@
-# BNPL Refund-to-Loan Reconciliation Engine
+# Refund Reconciliation Engine
 
-> A production-grade simulation of refund matching logic for transaction-linked lending products.
+> A production-grade simulation of refund matching logic for transaction-linked credit products.
 
 ## The Problem
 
-In Buy Now Pay Later (BNPL) and card-linked installment products, a loan is created for each financed purchase. When a customer is refunded, the refund often arrives through the card network **without a clean reference to the original transaction** — the money hits the account, but the loan stays open.
+In any product where a **financial obligation is created at the transaction level** — BNPL, card-linked installments, debit flex, expense management, merchant cash advances, or subscription financing — refunds present a structural reconciliation gap.
+
+When a refund routes back through the card network or a separate payment channel, it often arrives **without a clean reference to the original transaction**. The money hits the account. The obligation stays open.
+
+This is not a BNPL-specific problem. It is a structural gap in **any system where the origination channel and the refund channel don't share a common identifier** — and it compounds at scale.
+
+Affected product types include:
+- **Card-linked / transaction-linked BNPL** (Cash App Pay, debit flex, virtual card BNPL)
+- **Co-brand & store credit cards** where rewards or limits are tied to specific purchases
+- **Corporate expense cards** (Brex, Ramp) where approved expenses must reconcile to transactions
+- **Merchant cash advances** where repayment is calculated against original sales
+- **Earned Wage Access** where advances are tied to specific shifts or payroll transactions
+- **Subscription installment plans** where cancellation credits must offset future obligations
 
 This creates:
 - ❌ Incorrect outstanding balances
 - ❌ Erroneous dunning / collections activity
-- ❌ Customer support volume
-- ❌ Reconciliation failures at scale
-
-This is an **industry-wide problem** affecting any issuer running transaction-linked credit.
+- ❌ Customer support volume and disputes
+- ❌ Reconciliation failures and audit gaps at scale
 
 ## The Solution: 3-Layer Cascade Architecture
 
 Rather than treating this as a single fuzzy-match problem, this engine uses a **cascade of progressively weaker — but explicitly gated — signals**.
-
 ```
 Inbound Refund
      │
@@ -60,7 +69,7 @@ This makes the system **regulatorily defensible**: every decision has an audit t
 | S1 | Clean Visa TID hard link | HARD_LINKED |
 | S2 | No TID, normalized merchant name match | AUTO_MATCH |
 | S3 | Partial refund ($45 of $120) | AUTO_MATCH |
-| S4 | 3 identical Amazon transactions (ambiguous) | REVIEW_REQUIRED |
+| S4 | 3 identical transactions, same merchant (ambiguous) | REVIEW_REQUIRED |
 | S5 | Missing merchant_id, descriptor alias resolved | AUTO_MATCH |
 | S6 | Hard link found but transaction already refunded | REVIEW_REQUIRED |
 | S7 | Unknown merchant + excessive time gap | UNMATCHED |
@@ -69,22 +78,15 @@ This makes the system **regulatorily defensible**: every decision has an audit t
 | S10 | All reference fields null | REVIEW_REQUIRED |
 
 ## Running It
-
 ```bash
-# Install dependencies
 pip install streamlit pandas
-
-# Run the demo UI
 streamlit run app.py
-
-# Run tests
 python tests/test_engine.py
 ```
 
 ## Project Structure
-
 ```
-bnpl-refund-reconciliation/
+refund-reconciliation-engine/
 ├── engine/
 │   └── reconciliation_engine.py   # Core 3-layer cascade engine
 ├── data/
@@ -98,7 +100,7 @@ bnpl-refund-reconciliation/
 ## Why This Matters at Scale
 
 At high transaction volume, a 1% false-positive match rate means:
-- Incorrect loan closures → balance sheet errors
+- Incorrect obligation closures → balance sheet errors
 - Misapplied partial refunds → downstream installment miscalculation
 - Regulatory exposure if reconciliation can't be audited
 
@@ -106,4 +108,4 @@ The confidence-tiered routing (auto / review / unmatched) lets you **tune the op
 
 ---
 
-*Inspired by real reconciliation challenges in transaction-linked lending. Built to demonstrate systems thinking at the intersection of fintech, credit, and backend product design.*
+*Inspired by real reconciliation challenges across transaction-linked credit products including BNPL, debit flex, and card-linked installments. Built to demonstrate systems thinking at the intersection of fintech, credit operations, and backend product design.*

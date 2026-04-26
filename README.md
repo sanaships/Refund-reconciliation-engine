@@ -108,4 +108,4 @@ The confidence-tiered routing (auto / review / unmatched) lets you **tune the op
 
 ---
 
-*Inspired by real reconciliation challenges across transaction-linked credit products including BNPL, debit flex, and card-linked installments. Built to demonstrate systems thinking at the intersection of fintech, credit operations, and backend product design.*
+*Inspired by real reconciliation challenges across transaction-linked credit products including BNPL, debit flex, and card-linked installments.*
